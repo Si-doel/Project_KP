@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RegionController;
 use App\Http\Controllers\CabangController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\LaporanOperasionalController;
+use App\Http\Controllers\LaporanPerformanceController;
 use Illuminate\Support\Facades\Auth;
 
 Route::get('/', function () {
@@ -45,5 +47,18 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+// menu sidebar cabang
+
+Route::get('/laporan/{tanggal}/operasional', [LaporanOperasionalController::class, 'edit'])
+    ->name('laporan.operasional.edit');
+Route::post('/laporan/{tanggal}/operasional', [LaporanOperasionalController::class, 'update'])
+    ->name('laporan.operasional.update');
+
+// Laporan Performance
+Route::get('/laporan/{tanggal}/performance', [LaporanPerformanceController::class, 'edit'])
+    ->name('laporan.performance.edit');
+Route::post('/laporan/{tanggal}/performance', [LaporanPerformanceController::class, 'update'])
+    ->name('laporan.performance.update');
 
 require __DIR__ . '/auth.php';

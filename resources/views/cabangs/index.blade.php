@@ -21,6 +21,26 @@
                     <button class="btn btn-outline-secondary">Cari</button>
                 </form>
 
+                @php
+                    $sortLink = function ($column) {
+                        $direction =
+                            request('sort') === $column && request('direction', 'asc') === 'asc' ? 'desc' : 'asc';
+
+                        return request()->fullUrlWithQuery([
+                            'sort' => $column,
+                            'direction' => $direction,
+                        ]);
+                    };
+
+                    $sortIcon = function ($column) {
+                        if (request('sort') !== $column) {
+                            return '↕';
+                        }
+
+                        return request('direction', 'asc') === 'asc' ? '↑' : '↓';
+                    };
+                @endphp
+
                 <div class="table-responsive">
                     <table class="table table-striped align-middle">
                         <thead>

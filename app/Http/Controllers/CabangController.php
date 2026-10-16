@@ -11,19 +11,52 @@ class CabangController extends Controller
 {
     public function index(Request $request)
     {
-        $cabangs = Cabang::with('region')
-            ->when($request->q, function ($query, $q) {
-                $query->where(function ($w) use ($q) {
-                    $w->where('nama_cabang', 'like', "%{$q}%")
-                        ->orWhere('kode_cabang', 'like', "%{$q}%");
-                });
-            })
-            ->orderBy('kode_cabang')
-            ->paginate(15)
-            ->withQueryString();
+        // Kolom yang boleh digunakan untuk sorting
+        $allowedSorts = [
+            'kode_cabang' => 'cabangs.kode_cabang',
+            'nama_cabang' => 'cabangs.nama_cabang',
+            'kota_kabupaten' => 'cabangs.kota_kabupaten',
+            'jenis_cabang' => 'cabangs.jenis_cabang',
+            'region' => 'regions.nama_region',
+            'status' => 'cabangs.status',
+        ];
+
+        $sort = $request->input('sort', 'kode_cabang');
+        $direction = $request->input('direction', 'asc');
+
+        // Validasi kolom dan arah sorting
+        if (!array_key_exists($sort, $allowedSorts)) {
+            $sort = 'kode_cabang';
+        }
+
+        if (!in_array($direction, ['asc', 'desc'])) {
+            $direction = 'asc';
+        }
+
+        $query = Cabang::query()
+            ->leftJoin('regions', 'cabangs.region_id', '=', 'regions.id')
+            ->select('cabangs.*')
+            ->with('region');
+
+        // Pencarian kode atau nama cabang
+        if ($request->filled('q')) {
+            $keyword = $request->q;
+
+            $query->where(function ($q) use ($keyword) {
+                $q->where('cabangs.kode_cabang', 'like', "%{$keyword}%")
+                    ->orWhere('cabangs.nama_cabang', 'like', "%{$keyword}%");
+            });
+        }
+
+        // Sorting
+        $query->orderBy($allowedSorts[$sort], $direction);
+
+        // Pagination tetap mempertahankan pencarian dan sorting
+        $cabangs = $query->paginate(10)->withQueryString();
 
         return view('cabangs.index', compact('cabangs'));
     }
+
 
     public function create()
     {

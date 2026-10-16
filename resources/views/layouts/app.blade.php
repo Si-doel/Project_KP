@@ -227,7 +227,34 @@
 
                         {{-- ===== Menu khusus operator CABANG ===== --}}
                         @if (Auth::user()->role === 'CABANG')
-                            {{-- nanti: menu Input Laporan Harian --}}
+                            <li class="nav-item {{ request()->routeIs('laporan.*') ? 'menu-open' : '' }}">
+                                <a href="#"
+                                    class="nav-link {{ request()->routeIs('laporan.*') ? 'active' : '' }}">
+                                    <i class="nav-icon bi bi-clipboard-data"></i>
+                                    <p>
+                                        Input Laporan
+                                        <i class="nav-arrow bi bi-chevron-right"></i>
+                                    </p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="{{ route('laporan.operasional.edit', now()->toDateString()) }}"
+                                            class="nav-link {{ request()->routeIs('laporan.operasional.*') ? 'active' : '' }}">
+                                            <i class="nav-icon bi bi-file-earmark-text"></i>
+                                            <p>Laporan Operasional</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('laporan.performance.edit', now()->toDateString()) }}"
+                                            class="nav-link {{ request()->routeIs('laporan.performance.*') ? 'active' : '' }}">
+                                            <i class="nav-icon bi bi-file-earmark-text"></i>
+                                            <p>Laporan Performance</p>
+                                        </a>
+                                    </li>
+
+                                    {{-- Performance, Inventory, Karyawan, Utilitas, Armada: ditambah saat formnya jadi --}}
+                                </ul>
+                            </li>
                         @endif
 
                     </ul>
