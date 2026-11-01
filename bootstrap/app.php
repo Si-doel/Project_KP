@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
+            'laporan.belum.kirim' => \App\Http\Middleware\Laporanbelumkirim::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

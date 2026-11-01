@@ -219,17 +219,33 @@
                                             <p>Master User</p>
                                         </a>
                                     </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('laporan.index') }}"
+                                            class="nav-link {{ request()->routeIs('laporan.*') ? 'active' : '' }}">
+                                            <i class="nav-icon bi bi-clipboard-check"></i>
+                                            <p>Kelengkapan Laporan</p>
+                                        </a>
+                                    </li>
                                 </ul>
                             </li>
-
-                            {{-- nanti: menu Laporan (rekap semua cabang) --}}
                         @endif
 
                         {{-- ===== Menu khusus operator CABANG ===== --}}
                         @if (Auth::user()->role === 'CABANG')
-                            <li class="nav-item {{ request()->routeIs('laporan.*') ? 'menu-open' : '' }}">
-                                <a href="#"
-                                    class="nav-link {{ request()->routeIs('laporan.*') ? 'active' : '' }}">
+                            @php
+                                $menuLaporan = [
+                                    'operasional' => ['Laporan Operasional', 'bi-gear-wide-connected'],
+                                    'performance' => ['Laporan Performance', 'bi-graph-up-arrow'],
+                                    'inventory' => ['Laporan Inventory', 'bi-box-seam'],
+                                    'karyawan' => ['Laporan Karyawan', 'bi-people'],
+                                    'utilitas' => ['Laporan Utilitas', 'bi-tools'],
+                                    'armada' => ['Laporan Armada', 'bi-truck'],
+                                ];
+                                $dalamInput = request()->routeIs('laporan.*') && !request()->routeIs('laporan.kirim*');
+                            @endphp
+
+                            <li class="nav-item {{ $dalamInput ? 'menu-open' : '' }}">
+                                <a href="#" class="nav-link {{ $dalamInput ? 'active' : '' }}">
                                     <i class="nav-icon bi bi-clipboard-data"></i>
                                     <p>
                                         Input Laporan
@@ -237,24 +253,29 @@
                                     </p>
                                 </a>
                                 <ul class="nav nav-treeview">
-                                    <li class="nav-item">
-                                        <a href="{{ route('laporan.operasional.edit', now()->toDateString()) }}"
-                                            class="nav-link {{ request()->routeIs('laporan.operasional.*') ? 'active' : '' }}">
-                                            <i class="nav-icon bi bi-file-earmark-text"></i>
-                                            <p>Laporan Operasional</p>
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="{{ route('laporan.performance.edit', now()->toDateString()) }}"
-                                            class="nav-link {{ request()->routeIs('laporan.performance.*') ? 'active' : '' }}">
-                                            <i class="nav-icon bi bi-file-earmark-text"></i>
-                                            <p>Laporan Performance</p>
-                                        </a>
-                                    </li>
-
-                                    {{-- Performance, Inventory, Karyawan, Utilitas, Armada: ditambah saat formnya jadi --}}
+                                    @foreach ($menuLaporan as $kode => [$label, $ikon])
+                                        @if (Route::has("laporan.$kode.edit"))
+                                            <li class="nav-item">
+                                                <a href="{{ route("laporan.$kode.edit", now()->toDateString()) }}"
+                                                    class="nav-link {{ request()->routeIs("laporan.$kode.*") ? 'active' : '' }}">
+                                                    <i class="nav-icon bi {{ $ikon }}"></i>
+                                                    <p>{{ $label }}</p>
+                                                </a>
+                                            </li>
+                                        @endif
+                                    @endforeach
                                 </ul>
                             </li>
+
+                            @if (Route::has('laporan.kirim'))
+                                <li class="nav-item">
+                                    <a href="{{ route('laporan.kirim', now()->toDateString()) }}"
+                                        class="nav-link {{ request()->routeIs('laporan.kirim*') ? 'active' : '' }}">
+                                        <i class="nav-icon bi bi-send-check"></i>
+                                        <p>Kirim Laporan</p>
+                                    </a>
+                                </li>
+                            @endif
                         @endif
 
                     </ul>
@@ -275,8 +296,19 @@
                 </div>
             </div>
             <div class="app-content">
+                @if (!empty($terkunci))
+                    <div class="container-fluid">
+                        <div class="alert alert-secondary d-flex align-items-center gap-2">
+                            <i class="bi bi-lock-fill"></i>
+                            <div>
+                                Laporan tanggal ini sudah
+                                dikirim{{ !empty($waktuKirim) ? ' pada ' . $waktuKirim->format('d M Y H:i') : '' }}
+                                dan terkunci, jadi hanya bisa dilihat. Hubungi admin pusat jika perlu diperbaiki.
+                            </div>
+                        </div>
+                    </div>
+                @endif
                 @yield('content')
-                {{-- agar layout ini tetap bisa dipanggil lewat <x-app-layout> --}}
                 {{ $slot ?? '' }}
             </div>
         </main>
@@ -322,9 +354,22 @@
             }
         });
     </script>
-    <!--end::Script inti-->
-
-    {{-- Script tambahan khusus satu halaman (grafik, peta, dll) --}}
+    @if (!empty($terkunci))
+        <script>
+            // Tampilan terkunci: nonaktifkan isian dan sembunyikan tombol simpan.
+            // Pengamanan sebenarnya ada di server (middleware LaporanBelumDikirim).
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelectorAll('.app-content form[method="POST"]').forEach(function(form) {
+                    form.querySelectorAll('input:not([type="hidden"]), select, textarea').forEach(function(el) {
+                        el.disabled = true;
+                    });
+                    form.querySelectorAll('button[type="submit"]').forEach(function(btn) {
+                        btn.remove();
+                    });
+                });
+            });
+        </script>
+    @endif
     @stack('scripts')
 </body>
 

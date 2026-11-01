@@ -3,60 +3,33 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cabang;
+use App\Models\LaporanHarian;
 use App\Models\Region;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
+/**
+ * Master Cabang (khusus admin): daftar, tambah, ubah, hapus data cabang.
+ * Bukan dashboard operator cabang (itu DashboardCabangController).
+ */
 class CabangController extends Controller
 {
     public function index(Request $request)
     {
-        // Kolom yang boleh digunakan untuk sorting
-        $allowedSorts = [
-            'kode_cabang' => 'cabangs.kode_cabang',
-            'nama_cabang' => 'cabangs.nama_cabang',
-            'kota_kabupaten' => 'cabangs.kota_kabupaten',
-            'jenis_cabang' => 'cabangs.jenis_cabang',
-            'region' => 'regions.nama_region',
-            'status' => 'cabangs.status',
-        ];
-
-        $sort = $request->input('sort', 'kode_cabang');
-        $direction = $request->input('direction', 'asc');
-
-        // Validasi kolom dan arah sorting
-        if (!array_key_exists($sort, $allowedSorts)) {
-            $sort = 'kode_cabang';
-        }
-
-        if (!in_array($direction, ['asc', 'desc'])) {
-            $direction = 'asc';
-        }
-
-        $query = Cabang::query()
-            ->leftJoin('regions', 'cabangs.region_id', '=', 'regions.id')
-            ->select('cabangs.*')
-            ->with('region');
-
-        // Pencarian kode atau nama cabang
-        if ($request->filled('q')) {
-            $keyword = $request->q;
-
-            $query->where(function ($q) use ($keyword) {
-                $q->where('cabangs.kode_cabang', 'like', "%{$keyword}%")
-                    ->orWhere('cabangs.nama_cabang', 'like', "%{$keyword}%");
-            });
-        }
-
-        // Sorting
-        $query->orderBy($allowedSorts[$sort], $direction);
-
-        // Pagination tetap mempertahankan pencarian dan sorting
-        $cabangs = $query->paginate(10)->withQueryString();
+        $cabangs = Cabang::with('region')
+            ->when($request->q, function ($query, $q) {
+                $query->where(function ($w) use ($q) {
+                    $w->where('nama_cabang', 'like', "%{$q}%")
+                        ->orWhere('kode_cabang', 'like', "%{$q}%");
+                });
+            })
+            ->orderBy('kode_cabang')
+            ->paginate(15)
+            ->withQueryString();
 
         return view('cabangs.index', compact('cabangs'));
     }
-
 
     public function create()
     {
@@ -92,8 +65,12 @@ class CabangController extends Controller
 
     public function destroy(Cabang $cabang)
     {
-        if ($cabang->users()->exists()) {
+        if (User::where('cabang_id', $cabang->id)->exists()) {
             return back()->with('error', 'Cabang masih memiliki akun user. Ubah statusnya menjadi TUTUP, atau pindahkan usernya dulu.');
+        }
+
+        if (LaporanHarian::where('cabang_id', $cabang->id)->exists()) {
+            return back()->with('error', 'Cabang sudah memiliki laporan harian, jadi tidak bisa dihapus. Ubah statusnya menjadi TUTUP.');
         }
 
         $cabang->delete();

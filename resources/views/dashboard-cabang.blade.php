@@ -3,34 +3,30 @@
 @section('title', 'Dashboard Cabang')
 
 @php
-    $user = Auth::user();
-    $cabang = $user->cabang;
-
-    // Tanggal laporan dari ?tanggal=YYYY-MM-DD.
-    // Kosong, tidak valid, atau masa depan => hari ini.
-    // (Sementara dihitung di sini; dipindah ke controller di Bagian 5.)
-    $hariIni = now()->toDateString();
-    $tgl = $hariIni;
-    $input = request('tanggal');
-
-    if (
-        is_string($input) &&
-        preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $input, $m) &&
-        checkdate((int) $m[2], (int) $m[3], (int) $m[1]) &&
-        $input <= $hariIni
-    ) {
-        $tgl = $input;
-    }
-
-    // Nama bagian => sudah ada formnya atau belum
-    $bagian = [
-        'Operasional' => true,
-        'Performance' => false,
-        'Inventory' => false,
-        'Karyawan' => false,
-        'Utilitas' => false,
-        'Armada' => false,
+    // kode bagian => ikon (nama bagian diambil dari LaporanHarian::BAGIAN)
+    $ikon = [
+        'opr' => 'bi-gear-wide-connected',
+        'prf' => 'bi-graph-up-arrow',
+        'inv' => 'bi-box-seam',
+        'kry' => 'bi-people',
+        'utl' => 'bi-tools',
+        'arm' => 'bi-truck',
     ];
+    // kode singkat => nama route (laporan.{nama}.edit)
+    $rute = [
+        'opr' => 'operasional',
+        'prf' => 'performance',
+        'inv' => 'inventory',
+        'kry' => 'karyawan',
+        'utl' => 'utilitas',
+        'arm' => 'armada',
+    ];
+
+    $semua = \App\Models\LaporanHarian::BAGIAN;
+    $total = count($semua);
+    $lengkap = $laporan?->jumlahLengkap() ?? 0;
+    $status = $laporan ? $laporan->status : 'BELUM DIISI';
+    $warna = ['FINAL' => 'success', 'DRAFT' => 'warning'][$status] ?? 'secondary';
 @endphp
 
 @section('content')
@@ -57,9 +53,41 @@
 
                     <form method="GET" class="ms-auto d-flex align-items-center gap-2">
                         <label for="tanggal" class="mb-0">Tanggal laporan</label>
-                        <input type="date" id="tanggal" name="tanggal" class="form-control" value="{{ $tgl }}"
-                            max="{{ $hariIni }}" onchange="this.form.submit()">
+                        <input type="date" id="tanggal" name="tanggal" class="form-control"
+                            value="{{ $tgl->toDateString() }}" max="{{ now()->toDateString() }}"
+                            onchange="this.form.submit()">
                     </form>
+                </div>
+            </div>
+
+            {{-- Progres kelengkapan --}}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <span>Kelengkapan laporan</span>
+                        <strong>{{ $lengkap }} dari {{ $total }} bagian lengkap</strong>
+                    </div>
+                    <div class="progress mt-2" style="height: 10px">
+                        <div class="progress-bar bg-success" style="width: {{ ($lengkap / $total) * 100 }}%"></div>
+                    </div>
+                    <div class="mt-2">
+                        Status:
+                        <span class="badge text-bg-{{ $warna }}">{{ $status }}</span>
+                        @if ($laporan?->end_proses)
+                            <span class="text-muted small ms-1">dikirim
+                                {{ $laporan->end_proses->format('d M Y H:i') }}</span>
+                        @endif
+                    </div>
+
+                    @if ($laporan?->siapKirim())
+                        <div class="alert alert-info mt-3 mb-0 d-flex align-items-center gap-3">
+                            <div>Semua bagian sudah lengkap. Laporan siap dikirim.</div>
+                            @if (Route::has('laporan.kirim'))
+                                <a href="{{ route('laporan.kirim', $tgl->toDateString()) }}"
+                                    class="btn btn-sm btn-primary ms-auto">Kirim Laporan</a>
+                            @endif
+                        </div>
+                    @endif
                 </div>
             </div>
 
@@ -69,18 +97,34 @@
                     <h3 class="card-title">Bagian laporan</h3>
                 </div>
                 <ul class="list-group list-group-flush">
-                    @foreach ($bagian as $nama => $tersedia)
+                    @foreach ($semua as $kode => $nama)
+                        @php
+                            $namaRute = 'laporan.' . $rute[$kode] . '.edit';
+                            $ada = Route::has($namaRute);
+                            $selesai = $laporan?->sudahLengkap($kode) ?? false;
+                        @endphp
                         <li class="list-group-item d-flex align-items-center gap-3">
-                            <div class="fw-semibold" style="min-width: 130px">{{ $nama }}</div>
+                            <i class="bi {{ $ikon[$kode] }} fs-5 text-secondary"></i>
+                            <div class="fw-semibold" style="min-width: 120px">{{ $nama }}</div>
 
-                            {{-- Status per bagian (Belum diisi / Tersimpan / Selesai) ditambahkan di Bagian 5 --}}
+                            <div>
+                                @if (!$ada)
+                                    <span class="badge text-bg-light text-muted border">Segera tersedia</span>
+                                @elseif ($selesai)
+                                    <span class="badge text-bg-success">Lengkap</span>
+                                    <span
+                                        class="text-muted small ms-1">{{ $laporan->{$kode . '_selesai_at'}->format('d M Y H:i') }}</span>
+                                @else
+                                    <span class="badge text-bg-secondary">Belum diisi</span>
+                                @endif
+                            </div>
 
                             <div class="ms-auto">
-                                @if ($tersedia)
-                                    <a href="{{ route('laporan.operasional.edit', $tgl) }}"
-                                        class="btn btn-sm btn-primary">Isi</a>
-                                @else
-                                    <span class="badge text-bg-light text-muted border">Segera tersedia</span>
+                                @if ($ada)
+                                    <a href="{{ route($namaRute, $tgl->toDateString()) }}"
+                                        class="btn btn-sm {{ $selesai ? 'btn-outline-secondary' : 'btn-primary' }}">
+                                        {{ $selesai ? 'Ubah' : 'Isi' }}
+                                    </a>
                                 @endif
                             </div>
                         </li>
