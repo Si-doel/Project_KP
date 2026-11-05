@@ -150,6 +150,15 @@
                         </tbody>
                     </table>
                 </div>
+
+                {{-- Pagination --}}
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+                    <div class="text-muted small">
+                        Menampilkan {{ $baris->firstItem() ?? 0 }} - {{ $baris->lastItem() ?? 0 }}
+                        dari {{ $baris->total() }} cabang
+                    </div>
+                    {{ $baris->links() }}
+                </div>
             </div>
         </div>
     </div>

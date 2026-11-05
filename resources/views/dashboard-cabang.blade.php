@@ -27,6 +27,7 @@
     $lengkap = $laporan?->jumlahLengkap() ?? 0;
     $status = $laporan ? $laporan->status : 'BELUM DIISI';
     $warna = ['FINAL' => 'success', 'DRAFT' => 'warning'][$status] ?? 'secondary';
+    $final = $status === 'FINAL'; // sudah dikirim: form hanya bisa dilihat
 @endphp
 
 @section('content')
@@ -122,8 +123,8 @@
                             <div class="ms-auto">
                                 @if ($ada)
                                     <a href="{{ route($namaRute, $tgl->toDateString()) }}"
-                                        class="btn btn-sm {{ $selesai ? 'btn-outline-secondary' : 'btn-primary' }}">
-                                        {{ $selesai ? 'Ubah' : 'Isi' }}
+                                        class="btn btn-sm {{ $final || $selesai ? 'btn-outline-secondary' : 'btn-primary' }}">
+                                        {{ $final ? 'Lihat' : ($selesai ? 'Ubah' : 'Isi') }}
                                     </a>
                                 @endif
                             </div>

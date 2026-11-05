@@ -7,12 +7,16 @@ use App\Models\LaporanHarian;
 use App\Models\Region;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * Sisi admin: memantau kelengkapan laporan semua cabang dan membuka kembali laporan yang sudah dikirim.
  */
 class LaporanAdminController extends Controller
 {
+    /** Jumlah cabang per halaman pada daftar kelengkapan. */
+    private const PER_HALAMAN = 15;
+
     /** Daftar kelengkapan: semua cabang aktif pada satu tanggal. */
     public function index(Request $request)
     {
@@ -42,9 +46,22 @@ class LaporanAdminController extends Controller
             $cabangs = $cabangs->filter(fn($c) => $statusDari($c) === $status);
         }
 
+        // Halaman: ringkasan di atas tetap menghitung semua cabang, hanya tabel yang dipotong per halaman.
+        $total   = $cabangs->count();
+        $terakhir = max(1, (int) ceil($total / self::PER_HALAMAN));
+        $halaman  = min(max(1, LengthAwarePaginator::resolveCurrentPage()), $terakhir);
+
+        $baris = new LengthAwarePaginator(
+            $cabangs->forPage($halaman, self::PER_HALAMAN)->values(),
+            $total,
+            self::PER_HALAMAN,
+            $halaman,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
         return view('admin.laporan.index', [
             'tgl'      => $tgl,
-            'baris'    => $cabangs,
+            'baris'    => $baris,
             'laporans' => $laporans,
             'ringkas'  => $ringkas,
             'regions'  => Region::orderBy('nama_region')->get(),
