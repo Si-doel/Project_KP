@@ -138,12 +138,23 @@
                     <form method="GET" class="ms-auto d-flex align-items-center gap-2">
 
                         <label for="tanggal" class="mb-0">
-                            Tanggal laporan
+                            Tanggal akhir
                         </label>
 
                         <input type="date" id="tanggal" name="tanggal" class="form-control"
                             value="{{ $tgl->toDateString() }}" max="{{ now()->toDateString() }}"
                             onchange="this.form.submit()">
+
+                        <label for="periode" class="mb-0 ms-2">
+                            Periode
+                        </label>
+
+                        <select id="periode" name="periode" class="form-select" style="width: auto"
+                            onchange="this.form.submit()">
+                            <option value="7" {{ $periode === 7 ? 'selected' : '' }}>7 hari</option>
+                            <option value="14" {{ $periode === 14 ? 'selected' : '' }}>14 hari</option>
+                            <option value="30" {{ $periode === 30 ? 'selected' : '' }}>30 hari</option>
+                        </select>
 
                     </form>
 
@@ -185,6 +196,65 @@
                     </div>
                 @endforeach
 
+            </div>
+
+            {{-- Grafik tren laporan FINAL --}}
+            <div class="row">
+                <div class="col-lg-6 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h3 class="card-title">Tren NPB ALL</h3>
+                        </div>
+                        <div class="card-body">
+                            <div style="height: 280px">
+                                <canvas id="grafikNpb"></canvas>
+                            </div>
+                            <small class="text-muted">Garis MA3 dihitung dari tiga observasi FINAL terakhir yang
+                                tersedia.</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h3 class="card-title">Tren BPB ALL</h3>
+                        </div>
+                        <div class="card-body">
+                            <div style="height: 280px">
+                                <canvas id="grafikBpb"></canvas>
+                            </div>
+                            <small class="text-muted">Garis MA3 dihitung dari tiga observasi FINAL terakhir yang
+                                tersedia.</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h3 class="card-title">Monitoring Toko</h3>
+                        </div>
+                        <div class="card-body">
+                            <div style="height: 280px">
+                                <canvas id="grafikToko"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h3 class="card-title">Monitoring Paket</h3>
+                        </div>
+                        <div class="card-body">
+                            <div style="height: 280px">
+                                <canvas id="grafikPaket"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {{-- Progress Kelengkapan Laporan --}}
@@ -340,3 +410,118 @@
 
     </div>
 @endsection
+
+
+@push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dataGrafik = @json($chartData);
+            const labels = dataGrafik.labels;
+
+            const formatRupiah = (nilai) => {
+                if (nilai === null || nilai === undefined) return '';
+                return new Intl.NumberFormat('id-ID').format(nilai);
+            };
+
+            const opsiUmum = {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + formatRupiah(context.parsed.y);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: (value) => formatRupiah(value)
+                        }
+                    }
+                }
+            };
+
+            function buatGrafikTren(id, aktual, ma3, labelAktual) {
+                const elemen = document.getElementById(id);
+                if (!elemen) return;
+
+                new Chart(elemen, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                                label: labelAktual,
+                                data: aktual,
+                                borderWidth: 2,
+                                tension: 0.25,
+                                spanGaps: false
+                            },
+                            {
+                                label: 'Moving Average 3',
+                                data: ma3,
+                                borderWidth: 2,
+                                borderDash: [6, 4],
+                                tension: 0.25,
+                                spanGaps: false
+                            }
+                        ]
+                    },
+                    options: opsiUmum
+                });
+            }
+
+            function buatGrafikPerbandingan(id, seri) {
+                const elemen = document.getElementById(id);
+                if (!elemen) return;
+
+                new Chart(elemen, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: seri.map(item => ({
+                            label: item.label,
+                            data: item.data,
+                            borderWidth: 1
+                        }))
+                    },
+                    options: opsiUmum
+                });
+            }
+
+            buatGrafikTren('grafikNpb', dataGrafik.npb.aktual, dataGrafik.npb.ma3, 'NPB ALL');
+            buatGrafikTren('grafikBpb', dataGrafik.bpb.aktual, dataGrafik.bpb.ma3, 'BPB ALL');
+
+            buatGrafikPerbandingan('grafikToko', [{
+                    label: 'Toko Picking',
+                    data: dataGrafik.toko.picking
+                },
+                {
+                    label: 'Toko Kirim',
+                    data: dataGrafik.toko.kirim
+                }
+            ]);
+
+            buatGrafikPerbandingan('grafikPaket', [{
+                    label: 'Paket Terbentuk',
+                    data: dataGrafik.paket.terbentuk
+                },
+                {
+                    label: 'Paket Kirim',
+                    data: dataGrafik.paket.kirim
+                }
+            ]);
+        });
+    </script>
+@endpush
