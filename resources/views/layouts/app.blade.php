@@ -186,49 +186,89 @@
                             </a>
                         </li>
 
+
                         {{-- ===== Menu khusus ADMIN ===== --}}
                         @if (Auth::user()->role === 'ADMIN')
-                            <li class="nav-item {{ request()->routeIs('cabangs.*', 'users.*') ? 'menu-open' : '' }}">
+                            {{-- MENU MASTER --}}
+                            <li
+                                class="nav-item {{ request()->routeIs('regions.*', 'cabangs.*', 'users.*') ? 'menu-open' : '' }}">
+
                                 <a href="#"
-                                    class="nav-link {{ request()->routeIs('cabangs.*', 'users.*') ? 'active' : '' }}">
+                                    class="nav-link {{ request()->routeIs('regions.*', 'cabangs.*', 'users.*') ? 'active' : '' }}">
+
                                     <i class="nav-icon bi bi-pencil-square"></i>
+
                                     <p>
-                                        Master
+                                        MASTER
                                         <i class="nav-arrow bi bi-chevron-right"></i>
                                     </p>
                                 </a>
+
                                 <ul class="nav nav-treeview">
+
+                                    {{-- MASTER REGION --}}
                                     <li class="nav-item">
                                         <a href="{{ route('regions.index') }}"
                                             class="nav-link {{ request()->routeIs('regions.*') ? 'active' : '' }}">
+
                                             <i class="nav-icon bi bi-geo-alt"></i>
                                             <p>Master Region</p>
                                         </a>
                                     </li>
+
+                                    {{-- MASTER CABANG --}}
                                     <li class="nav-item">
                                         <a href="{{ route('cabangs.index') }}"
                                             class="nav-link {{ request()->routeIs('cabangs.*') ? 'active' : '' }}">
+
                                             <i class="nav-icon bi bi-file-earmark-text"></i>
                                             <p>Master Cabang</p>
                                         </a>
                                     </li>
+
+                                    {{-- MASTER USER --}}
                                     <li class="nav-item">
                                         <a href="{{ route('users.index') }}"
                                             class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
+
                                             <i class="nav-icon bi bi-people"></i>
                                             <p>Master User</p>
                                         </a>
                                     </li>
+
+                                </ul>
+                            </li>
+
+                            {{-- MENU LAPORAN --}}
+                            <li class="nav-item {{ request()->routeIs('laporan.index') ? 'menu-open' : '' }}">
+
+                                <a href="#"
+                                    class="nav-link {{ request()->routeIs('laporan.index') ? 'active' : '' }}">
+
+                                    <i class="nav-icon bi bi-clipboard-data"></i>
+
+                                    <p>
+                                        LAPORAN
+                                        <i class="nav-arrow bi bi-chevron-right"></i>
+                                    </p>
+                                </a>
+
+                                <ul class="nav nav-treeview">
+
+                                    {{-- KELENGKAPAN LAPORAN --}}
                                     <li class="nav-item">
                                         <a href="{{ route('laporan.index') }}"
-                                            class="nav-link {{ request()->routeIs('laporan.*') ? 'active' : '' }}">
+                                            class="nav-link {{ request()->routeIs('laporan.index') ? 'active' : '' }}">
+
                                             <i class="nav-icon bi bi-clipboard-check"></i>
                                             <p>Kelengkapan Laporan</p>
                                         </a>
                                     </li>
+
                                 </ul>
                             </li>
                         @endif
+
 
                         {{-- ===== Menu khusus operator CABANG ===== --}}
                         @if (Auth::user()->role === 'CABANG')

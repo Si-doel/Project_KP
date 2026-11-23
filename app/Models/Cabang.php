@@ -22,10 +22,6 @@ class Cabang extends Model
         'status',
     ];
 
-    // protected $casts = [
-    //     'status' => 'boolean',
-    // ];
-
     public function region()
     {
         return $this->belongsTo(Region::class);
@@ -76,6 +72,19 @@ class Cabang extends Model
         'PAPUA TENGAH',
         'PAPUA PEGUNUNGAN',
     ];
+
+    public const JENIS_CABANG = [
+        'INDUK',
+        'DEPO',
+        'SEWA',
+    ];
+
+    public const STATUS = [
+        'AKTIF',
+        'TIDAK_AKTIF',
+        'TUTUP',
+    ];
+
 
     public static function daftarProvinsi(): array
     {

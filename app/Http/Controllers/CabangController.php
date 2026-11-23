@@ -78,27 +78,116 @@ class CabangController extends Controller
         return back()->with('success', 'Data cabang berhasil dihapus.');
     }
 
+
     private function validated(Request $request, ?Cabang $cabang = null): array
     {
-        // Rapikan input: huruf besar, tanpa spasi di pinggir
+        // Normalisasi input
         $request->merge([
-            'kode_cabang'    => strtoupper(trim((string) $request->kode_cabang)),
-            'kota_kabupaten' => strtoupper(trim((string) $request->kota_kabupaten)),
+            'kode_cabang'    => strtoupper(trim((string) $request->input('kode_cabang', ''))),
+            'nama_cabang'    => trim((string) $request->input('nama_cabang', '')),
+            'alamat'         => trim((string) $request->input('alamat', '')),
+            'kota_kabupaten' => strtoupper(trim((string) $request->input('kota_kabupaten', ''))),
+            'provinsi'       => trim((string) $request->input('provinsi', '')),
         ]);
 
         return $request->validate([
-            'kode_cabang'    => ['required', 'regex:/^[A-Z0-9]{4}$/', Rule::unique('cabangs', 'kode_cabang')->ignore($cabang?->id)],
-            'nama_cabang'    => ['required', 'string', 'max:100'],
-            'alamat'         => ['required', 'string', 'max:255'],
-            'kota_kabupaten' => ['required', 'string', 'max:50'],
-            'provinsi'       => ['required', Rule::in(Cabang::PROVINSI)],
-            'jenis_cabang'   => ['required', Rule::in(['INDUK', 'DEPO', 'SEWA'])],
-            'region_id'      => ['required', 'exists:regions,id'],
-            'latitude'       => ['nullable', 'numeric', 'between:-90,90'],
-            'longitude'      => ['nullable', 'numeric', 'between:-180,180'],
-            'status'         => ['required', Rule::in(['AKTIF', 'TIDAK_AKTIF', 'TUTUP'])],
+            'kode_cabang' => [
+                'required',
+                'string',
+                'size:4',
+                'regex:/^[A-Z0-9]{4}$/',
+                Rule::unique('cabangs', 'kode_cabang')
+                    ->ignore($cabang?->id),
+            ],
+
+            'nama_cabang' => [
+                'required',
+                'string',
+                'max:100',
+            ],
+
+            'alamat' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+
+            'kota_kabupaten' => [
+                'required',
+                'string',
+                'max:50',
+            ],
+
+            'provinsi' => [
+                'required',
+                Rule::in(Cabang::PROVINSI),
+            ],
+
+            'jenis_cabang' => [
+                'required',
+                Rule::in(Cabang::JENIS_CABANG),
+            ],
+
+            'region_id' => [
+                'required',
+                'integer',
+                'exists:regions,id',
+            ],
+
+            'latitude' => [
+                'nullable',
+                'required_with:longitude',
+                'numeric',
+                'between:-90,90',
+            ],
+
+            'longitude' => [
+                'nullable',
+                'required_with:latitude',
+                'numeric',
+                'between:-180,180',
+            ],
+
+            'status' => [
+                'required',
+                Rule::in(Cabang::STATUS),
+            ],
+
         ], [
-            'kode_cabang.regex' => 'Kode cabang harus 4 karakter huruf atau angka, contoh: G259.',
+            'kode_cabang.required' => 'Kode cabang wajib diisi.',
+            'kode_cabang.size' => 'Kode cabang harus tepat 4 karakter.',
+            'kode_cabang.regex' => 'Kode cabang hanya boleh menggunakan huruf kapital dan angka, contoh: G259.',
+            'kode_cabang.unique' => 'Kode cabang tersebut sudah terdaftar.',
+
+            'nama_cabang.required' => 'Nama cabang wajib diisi.',
+            'nama_cabang.max' => 'Nama cabang maksimal 100 karakter.',
+
+            'alamat.required' => 'Alamat cabang wajib diisi.',
+            'alamat.max' => 'Alamat maksimal 255 karakter.',
+
+            'kota_kabupaten.required' => 'Kota/kabupaten wajib diisi.',
+            'kota_kabupaten.max' => 'Kota/kabupaten maksimal 50 karakter.',
+
+            'provinsi.required' => 'Provinsi wajib dipilih.',
+            'provinsi.in' => 'Provinsi yang dipilih tidak valid.',
+
+            'jenis_cabang.required' => 'Jenis cabang wajib dipilih.',
+            'jenis_cabang.in' => 'Jenis cabang yang dipilih tidak valid.',
+
+            'region_id.required' => 'Region wajib dipilih.',
+            'region_id.integer' => 'Region yang dipilih tidak valid.',
+            'region_id.exists' => 'Region yang dipilih tidak ditemukan.',
+
+            'latitude.required_with' => 'Latitude wajib diisi jika longitude diisi.',
+            'latitude.numeric' => 'Latitude harus berupa angka.',
+            'latitude.between' => 'Latitude harus berada antara -90 sampai 90.',
+
+            'longitude.required_with' => 'Longitude wajib diisi jika latitude diisi.',
+            'longitude.numeric' => 'Longitude harus berupa angka.',
+            'longitude.between' => 'Longitude harus berada antara -180 sampai 180.',
+
+            'status.required' => 'Status cabang wajib dipilih.',
+            'status.in' => 'Status cabang yang dipilih tidak valid.',
         ]);
     }
 }
