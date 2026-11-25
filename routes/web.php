@@ -8,6 +8,7 @@ use App\Http\Controllers\RegionController;
 use App\Http\Controllers\CabangController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DashboardCabangController;
+use App\Http\Controllers\DashboardAdminController;
 use App\Http\Controllers\LaporanAdminController;
 use App\Http\Controllers\LaporanOperasionalController;
 use App\Http\Controllers\LaporanPerformanceController;
@@ -48,9 +49,15 @@ Route::get('/dashboard', function () {
 Route::middleware(['auth', 'role:ADMIN'])->group(function () {
 
     // Dashboard Admin
-    Route::get('/dashboard-admin', function () {
-        return view('dashboard-admin');
-    })->name('dashboard.admin');
+    Route::get('/dashboard-admin', [DashboardAdminController::class, 'index'])
+        ->name('dashboard.admin');
+
+    // Endpoint data terbaru untuk pembaruan otomatis Dashboard Admin
+    Route::get('/dashboard-admin/refresh', [DashboardAdminController::class, 'refresh'])
+        ->name('dashboard.admin.refresh');
+    // Route::get('/dashboard-admin', function () {
+    //     return view('dashboard-admin');
+    // })->name('dashboard.admin');
 
     // Master Data
     Route::resource('regions', RegionController::class)->except('show');
